@@ -633,6 +633,7 @@ impl App {
                     playing_change: _,
                     timeline_change: _,
                     time_change: _,
+                    time_selection_change: _,
                 } = self.state.blueprint_time_control.update(
                     bp_ctx.current_blueprint,
                     &re_viewer_context::TimeControlUpdateParams {
@@ -4380,6 +4381,10 @@ fn handle_time_ctrl_event(
 
     if let Some(time) = response.time_change {
         events.on_time_update(recording, time);
+    }
+
+    if let Some(selection) = response.time_selection_change {
+        events.on_time_selection_change(recording, selection);
     }
 }
 

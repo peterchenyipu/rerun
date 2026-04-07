@@ -456,6 +456,9 @@ pub struct TimeControlResponse {
 
     /// Set if the time changed.
     pub time_change: Option<TimeReal>,
+
+    /// Set if the time selection (loop selection) changed.
+    pub time_selection_change: Option<Option<AbsoluteTimeRangeF>>,
 }
 
 impl TimeControlResponse {
@@ -469,6 +472,7 @@ impl TimeControlResponse {
             playing_change: None,
             timeline_change: None,
             time_change: None,
+            time_selection_change: None,
         }
     }
 }
@@ -745,6 +749,11 @@ impl TimeControl {
             if old_state.is_none_or(|old_state| old_state.time != state.time) {
                 response.time_change = Some(state.time);
             }
+
+            let old_selection = old_state.and_then(|s| s.time_selection);
+            if old_selection != state.time_selection {
+                response.time_selection_change = Some(state.time_selection);
+            }
         }
     }
 
@@ -779,6 +788,7 @@ impl TimeControl {
             playing_change: None,
             timeline_change: None,
             time_change: None,
+            time_selection_change: None,
         };
 
         let (old_playing, old_timeline, old_state) = (

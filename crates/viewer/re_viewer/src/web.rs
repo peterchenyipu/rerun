@@ -538,6 +538,46 @@ impl WebHandle {
         JsValue::from(obj)
     }
 
+    /// Get the current time selection (loop selection) range, if any.
+    ///
+    /// Returns an object with `min` and `max` fields (as f64), or null if no selection exists.
+    //TODO(#10737): we should refer to logical recordings using store id (recording id is ambibuous)
+    #[wasm_bindgen]
+    pub fn get_time_selection(&self, recording_id: &str) -> JsValue {
+        let Some(app) = self.runner.app_mut::<crate::App>() else {
+            return JsValue::null();
+        };
+
+        let crate::App {
+            store_hub: Some(hub),
+            state,
+            ..
+        } = &*app
+        else {
+            return JsValue::null();
+        };
+
+        let Some(store_id) = store_id_from_recording_id(hub, recording_id) else {
+            return JsValue::null();
+        };
+
+        let Some(time_ctrl) = state.time_control(&store_id) else {
+            return JsValue::null();
+        };
+
+        let Some(selection) = time_ctrl.time_selection() else {
+            return JsValue::null();
+        };
+
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &"min".into(), &selection.min.as_f64().into())
+            .ok_or_log_js_error();
+        js_sys::Reflect::set(&obj, &"max".into(), &selection.max.as_f64().into())
+            .ok_or_log_js_error();
+
+        JsValue::from(obj)
+    }
+
     //TODO(#10737): we should refer to logical recordings using store id (recording id is ambibuous)
     #[wasm_bindgen]
     pub fn get_playing(&self, recording_id: &str) -> Option<bool> {

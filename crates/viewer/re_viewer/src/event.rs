@@ -90,6 +90,17 @@ pub enum ViewerEventKind {
     /// entity in a 2D or 3D view.
     SelectionChange { items: Vec<SelectionChangeItem> },
 
+    /// Fired when the time selection (loop selection) changes.
+    ///
+    /// Contains the new selection range, or null if the selection was removed.
+    TimeSelectionChange {
+        #[serde(with = "serde::option_time_real")]
+        min: Option<TimeReal>,
+
+        #[serde(with = "serde::option_time_real")]
+        max: Option<TimeReal>,
+    },
+
     /// Fired when a new recording is opened in the Viewer.
     ///
     /// For `rrd` file or stream, a recording is considered "open" after
@@ -285,6 +296,22 @@ impl ViewerEventDispatcher {
         ));
     }
 
+    #[inline]
+    pub fn on_time_selection_change(
+        &self,
+        db: &EntityDb,
+        selection: Option<re_log_types::AbsoluteTimeRangeF>,
+    ) {
+        let (min, max) = match selection {
+            Some(range) => (Some(range.min), Some(range.max)),
+            None => (None, None),
+        };
+        self.dispatch(ViewerEvent::from_db_and_kind(
+            db,
+            ViewerEventKind::TimeSelectionChange { min, max },
+        ));
+    }
+
     /// NOTE: The `db` should be the one for the new recording
     #[inline]
     pub fn on_recording_open(&self, db: &EntityDb) {
@@ -438,6 +465,33 @@ mod serde {
         {
             let v: f64 = Deserialize::deserialize(deserializer)?;
             Ok(re_log_types::TimeReal::from(v))
+        }
+    }
+
+    pub mod option_time_real {
+        use super::{Deserialize, Deserializer, Serialize, Serializer};
+
+        pub fn serialize<S>(
+            v: &Option<re_log_types::TimeReal>,
+            serializer: S,
+        ) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            match v {
+                Some(v) => Serialize::serialize(&v.as_f64(), serializer),
+                None => serializer.serialize_none(),
+            }
+        }
+
+        pub fn deserialize<'de, D>(
+            deserializer: D,
+        ) -> Result<Option<re_log_types::TimeReal>, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let v: Option<f64> = Deserialize::deserialize(deserializer)?;
+            Ok(v.map(re_log_types::TimeReal::from))
         }
     }
 }

@@ -1009,6 +1009,23 @@ export class WebViewer {
     }
   }
 
+  /**
+   * Get the current time selection (loop region) for a recording.
+   *
+   * Returns `{ min, max }` if a time selection exists, or `null` otherwise.
+   */
+  get_time_selection(
+    recording_id: string,
+  ): { min: number; max: number } | null {
+    if (!this.#handle) {
+      throw new Error(
+        `attempted to get time selection in a stopped web viewer`,
+      );
+    }
+
+    return this.#handle.get_time_selection(recording_id) ?? null;
+  }
+
   set_credentials(access_token: string, email: string) {
     if (!this.#handle) {
       throw new Error(
